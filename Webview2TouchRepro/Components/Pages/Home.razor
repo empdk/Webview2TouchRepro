@@ -1,0 +1,51 @@
+﻿@page "/"
+@code {
+	private List<string> _all = Enumerable.Range(1, 5000).Select(count => $"Product {count}").ToList();
+	private List<string> _filtered = [];
+	private bool _isProcessing;
+	private string _query = string.Empty;
+
+	protected override void OnInitialized()
+	{
+		_filtered = _all.ToList();
+	}
+
+	private void OnInput(ChangeEventArgs e)
+	{
+		_query = e?.Value?.ToString().Trim() ?? string.Empty;
+		_filtered = string.IsNullOrWhiteSpace(_query) ? _all : _all.Where(_ => _.Contains(_query)).ToList();
+		StateHasChanged();
+	}
+
+	private ValueTask<ItemsProviderResult<string>> LoadItems(ItemsProviderRequest request)
+	{
+		var total = _filtered.Count;
+		var items = _filtered.Skip(request.StartIndex).Take(request.Count).ToList();
+		return new ValueTask<ItemsProviderResult<string>>(new ItemsProviderResult<string>(items, total));
+	}
+
+	private void OnRowClick(string item)
+	{
+		_isProcessing = true;
+		Thread.Sleep(600);
+		_isProcessing = false;
+		StateHasChanged();
+	}
+}
+
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<input value="@_query" @oninput="OnInput" placeholder="filter" />
+
+<div style="height: 400px; overflow: auto;">
+	<Virtualize ItemsProvider="LoadItems" Context="item">
+		<ItemContent>
+			<div @onclick="() => OnRowClick(item)">
+				<div>@item</div>
+			</div>
+		</ItemContent>
+	</Virtualize>
+</div>
